@@ -1,4 +1,6 @@
 const mongoose = require('mongoose')
+var bcrypt = require('bcrypt-nodejs')
+
 // var validate = require('mongoose-validator')
 
 // const  nameValidator = [
@@ -77,7 +79,18 @@ const examSchema = new mongoose.Schema({
     },
     profile_url: { type: String }
 })
-// examSchema.methods.comparePassword = function(password) {
-//     return compareSync(password, this.password); 
-// };
+examSchema.pre('save', function(next) {
+    var user = this;
+
+    if (!user.isModified('password')) return next();
+    bcrypt.hash(user.password, null, null, function(err, hash) {
+        if (err) return next(err); // Exit if error is found
+        user.password = hash; // Assign the hash to the user's password so it is saved in database encrypted
+        next(); // Exit Bcrypt function
+    });
+});
+
+examSchema.methods.comparePassword = function(password) {
+    return bcrypt.compareSync(password, this.password); 
+};
 module.exports = mongoose.model("Exam", examSchema);
